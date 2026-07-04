@@ -9,6 +9,8 @@ export interface NavItem {
   id: string;
   label: string;
   href?: string;
+  external?: boolean;
+  children?: NavItem[];
 }
 
 export interface SharedHeaderProps {
@@ -75,41 +77,80 @@ export function SharedHeader({
             {navItems.map((item) => {
               const isActive = activeItem === item.id;
               return (
-                <div key={item.id} className="relative">
+                <div key={item.id} className="relative group">
                   {item.href ? (
-                    <Link
-                      href={item.href}
-                      onClick={(e) => {
-                        if (onNavClick) {
-                          onNavClick(item);
-                        }
-                      }}
-                      className={`px-4 py-2 rounded-lg font-medium transition-colors relative z-10 ${
-                        isActive
-                          ? 'text-primary-700 dark:text-primary-300'
-                          : 'text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400'
-                      }`}
-                    >
-                      {item.label}
-                    </Link>
+                    item.external ? (
+                      <a
+                        href={item.href}
+                        onClick={() => onNavClick?.(item)}
+                        className={`px-4 py-2 rounded-lg font-medium transition-colors relative z-10 ${
+                          isActive
+                            ? 'text-primary-700 dark:text-primary-300'
+                            : 'text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400'
+                        }`}
+                      >
+                        {item.label}
+                      </a>
+                    ) : (
+                      <Link
+                        href={item.href}
+                        onClick={(e) => {
+                          if (onNavClick) {
+                            onNavClick(item);
+                          }
+                        }}
+                        className={`px-4 py-2 rounded-lg font-medium transition-colors relative z-10 ${
+                          isActive
+                            ? 'text-primary-700 dark:text-primary-300'
+                            : 'text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400'
+                        }`}
+                      >
+                        {item.label}
+                      </Link>
+                    )
                   ) : (
                     <button
                       onClick={() => onNavClick?.(item)}
-                      className={`px-4 py-2 rounded-lg font-medium transition-colors relative z-10 ${
-                        isActive
+                      className={`px-4 py-2 rounded-lg font-medium transition-colors relative z-10 flex items-center gap-1 ${
+                        isActive || (item.children && item.children.some(c => activeItem === c.id))
                           ? 'text-primary-700 dark:text-primary-300'
                           : 'text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400'
                       }`}
                     >
                       {item.label}
+                      {item.children && (
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      )}
                     </button>
                   )}
-                  {isActive && (
+                  {(isActive || (item.children && item.children.some(c => activeItem === c.id))) && (
                     <motion.div
                       layoutId="desktopNavIndicator"
                       className="absolute inset-0 bg-primary-100 dark:bg-primary-900/30 rounded-lg z-0"
                       transition={{ type: "spring", stiffness: 300, damping: 30 }}
                     />
+                  )}
+                  {/* Dropdown Menu */}
+                  {item.children && (
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-100 dark:border-gray-800 py-2 min-w-[150px] overflow-hidden">
+                        {item.children.map(child => {
+                          const isChildActive = activeItem === child.id;
+                          const childClasses = `block px-4 py-2 text-sm font-medium transition-colors ${
+                            isChildActive 
+                              ? 'text-primary-700 dark:text-primary-300 bg-primary-50 dark:bg-primary-900/20' 
+                              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white'
+                          }`;
+                          
+                          if (child.external) {
+                            return <a key={child.id} href={child.href} className={childClasses}>{child.label}</a>;
+                          }
+                          return <Link key={child.id} href={child.href || '#'} className={childClasses}>{child.label}</Link>;
+                        })}
+                      </div>
+                    </div>
                   )}
                 </div>
               );
@@ -146,34 +187,89 @@ export function SharedHeader({
                 return (
                   <React.Fragment key={item.id}>
                     {item.href ? (
-                      <Link
-                        href={item.href}
-                        onClick={() => {
-                          setMobileMenuOpen(false);
-                          onNavClick?.(item);
-                        }}
-                        className={`block px-4 py-3 rounded-lg font-medium transition-colors ${
-                          isActive
-                            ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
-                        }`}
-                      >
-                        {item.label}
-                      </Link>
+                      item.external ? (
+                        <a
+                          href={item.href}
+                          onClick={() => {
+                            setMobileMenuOpen(false);
+                            onNavClick?.(item);
+                          }}
+                          className={`block px-4 py-3 rounded-lg font-medium transition-colors ${
+                            isActive
+                              ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                          }`}
+                        >
+                          {item.label}
+                        </a>
+                      ) : (
+                        <Link
+                          href={item.href}
+                          onClick={() => {
+                            setMobileMenuOpen(false);
+                            onNavClick?.(item);
+                          }}
+                          className={`block px-4 py-3 rounded-lg font-medium transition-colors ${
+                            isActive
+                              ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                          }`}
+                        >
+                          {item.label}
+                        </Link>
+                      )
                     ) : (
-                      <button
-                        onClick={() => {
-                          setMobileMenuOpen(false);
-                          onNavClick?.(item);
-                        }}
-                        className={`block text-left w-full px-4 py-3 rounded-lg font-medium transition-colors ${
-                          isActive
-                            ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
-                        }`}
-                      >
-                        {item.label}
-                      </button>
+                      <div className="flex flex-col gap-1">
+                        <button
+                          onClick={() => {
+                            if (!item.children) {
+                              setMobileMenuOpen(false);
+                              onNavClick?.(item);
+                            }
+                          }}
+                          className={`block text-left w-full px-4 py-3 rounded-lg font-medium transition-colors ${
+                            isActive || (item.children && item.children.some(c => activeItem === c.id))
+                              ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                          }`}
+                        >
+                          {item.label}
+                        </button>
+                        {item.children && (
+                          <div className="flex flex-col gap-1 pl-4 border-l-2 border-gray-100 dark:border-gray-800 ml-4 mt-1">
+                            {item.children.map(child => {
+                              const isChildActive = activeItem === child.id;
+                              const childClasses = `block px-4 py-2 rounded-lg font-medium transition-colors ${
+                                isChildActive
+                                  ? 'text-primary-700 dark:text-primary-300'
+                                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                              }`;
+                              if (child.external) {
+                                return (
+                                  <a
+                                    key={child.id}
+                                    href={child.href}
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className={childClasses}
+                                  >
+                                    {child.label}
+                                  </a>
+                                );
+                              }
+                              return (
+                                <Link
+                                  key={child.id}
+                                  href={child.href || '#'}
+                                  onClick={() => setMobileMenuOpen(false)}
+                                  className={childClasses}
+                                >
+                                  {child.label}
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </React.Fragment>
                 );
